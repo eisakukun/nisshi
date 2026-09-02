@@ -1,0 +1,204 @@
+<!doctype html><html lang="ja"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0f1012">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-180.png">
+<title>ポモドーロ日誌</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0f1012; --card:#17181c; --line:#26282e; --ink:#f2f3f5;
+  --dim:#8b8f98; --faint:#5a5e67; --hot:#ff8c3b; --cool:#4ea3ff; --ok:#4fd18b;
+}
+html,body{margin:0;background:var(--bg);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:760px;margin:0 auto;padding:28px 18px 72px;
+  padding-top:calc(28px + env(safe-area-inset-top))}
+h1{font-size:19px;margin:0 0 2px;letter-spacing:.02em}
+.sub{color:var(--faint);font-size:12.5px;margin-bottom:22px}
+.days{display:flex;gap:7px;overflow-x:auto;padding-bottom:14px;margin-bottom:18px;
+  scrollbar-width:none}
+.days::-webkit-scrollbar{display:none}
+.day{flex:0 0 auto;padding:7px 14px;border-radius:999px;background:var(--card);
+  border:1px solid var(--line);color:var(--dim);font-size:13px;cursor:pointer;
+  white-space:nowrap;transition:.15s}
+.day.on{background:var(--ink);color:#111;border-color:var(--ink);font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:22px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:13px 11px}
+.stat b{display:block;font-size:23px;font-weight:650;letter-spacing:-.01em;line-height:1.25}
+.stat span{color:var(--faint);font-size:11px}
+.stat.hot b{color:var(--hot)}
+.tl{position:relative;height:46px;background:var(--card);border:1px solid var(--line);
+  border-radius:11px;margin-bottom:8px;overflow:hidden}
+.tl i{position:absolute;top:9px;height:28px;border-radius:6px;
+  background:linear-gradient(180deg,var(--hot),#e0722a);opacity:.92}
+.ticks{display:flex;justify-content:space-between;color:var(--faint);
+  font-size:10.5px;margin-bottom:26px;padding:0 2px}
+.blk{background:var(--card);border:1px solid var(--line);border-radius:15px;
+  padding:16px 17px;margin-bottom:11px}
+.bh{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:11px}
+.time{font-size:16px;font-weight:620;letter-spacing:.01em}
+.len{color:var(--hot);font-size:13px;font-weight:600}
+.tag{margin-left:auto;font-size:11px;color:var(--dim);border:1px solid var(--line);
+  padding:2px 9px;border-radius:999px}
+.par{font-size:11.5px;color:var(--cool)}
+.did{margin:0;padding:0;list-style:none}
+.did li{display:flex;gap:9px;padding:5px 0;font-size:13.5px;color:#d6d8dd;line-height:1.5}
+.did em{flex:0 0 auto;color:var(--faint);font-style:normal;font-size:11.5px;
+  padding-top:2px;min-width:26px}
+.apps{margin-top:12px;padding-top:11px;border-top:1px solid var(--line)}
+.app{display:flex;align-items:center;gap:9px;font-size:11.5px;color:var(--dim);
+  margin-bottom:5px}
+.app u{flex:1;height:4px;background:#23252b;border-radius:3px;text-decoration:none;
+  overflow:hidden}
+.app u b{display:block;height:100%;background:var(--cool);border-radius:3px}
+.app s{text-decoration:none;flex:0 0 34px;text-align:right;color:var(--faint)}
+.app span{flex:0 0 auto;max-width:52%;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap}
+.blk.small{padding:11px 17px;opacity:.5}
+.blk.small .time{font-size:13.5px;font-weight:500}
+.blk.small .len{font-size:12px;color:var(--dim)}
+.tag.done{color:var(--ok);border-color:#2c4a3a}
+.gate{max-width:340px;margin:16vh auto 0;text-align:center}
+.gate p{color:var(--dim);font-size:13.5px;margin:0 0 20px}
+.gate input{width:100%;padding:14px 16px;border-radius:12px;background:var(--card);
+  border:1px solid var(--line);color:var(--ink);font-size:16px;text-align:center;
+  outline:none;letter-spacing:.08em}
+.gate input:focus{border-color:var(--hot)}
+.gate button{width:100%;margin-top:11px;padding:14px;border-radius:12px;border:0;
+  background:var(--hot);color:#181818;font-size:15px;font-weight:650;cursor:pointer}
+.gate .ng{color:#ff6b6b;font-size:12.5px;margin-top:13px;min-height:18px}
+.empty{color:var(--faint);text-align:center;padding:56px 20px;font-size:13.5px;line-height:2}
+</style></head><body><div class="wrap">
+<h1>ポモドーロ日誌</h1>
+<div class="sub" id="sub"></div>
+<div class="days" id="days"></div>
+<div id="body"></div>
+<div class="gate" id="gate" style="display:none">
+  <p>合い言葉を入れてください</p>
+  <input id="pw" type="password" autocomplete="current-password" enterkeyhint="go">
+  <button id="go">ひらく</button>
+  <div class="ng" id="ng"></div>
+</div>
+</div>
+<script>
+let DATA = null;
+const ENC = {"s":"B16759ZlSjnBBXnKQUfzmw==","i":"UPfoaS8UGjyl1vQT","c":"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"};
+let keys = [];
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const hhmm = m => (m >= 60 ? Math.floor(m/60) + '時間' + (m%60 ? (m%60) + '分' : '') : m + '分');
+
+function label(k){
+  const t = new Date(k + 'T00:00:00'), n = new Date();
+  const d0 = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+  const diff = Math.round((d0 - t) / 86400000);
+  if (diff === 0) return '今日';
+  if (diff === 1) return '昨日';
+  return (t.getMonth()+1) + '/' + t.getDate() + ' ' + '日月火水木金土'[t.getDay()];
+}
+
+function render(k){
+  document.querySelectorAll('.day').forEach(e =>
+    e.classList.toggle('on', e.dataset.k === k));
+  const d = DATA[k], B = d.blocks;
+  const S = 6, E = 26;                                    // 6時〜翌2時
+  const pos = h => Math.max(0, Math.min(100, ((h < S ? h + 24 : h) - S) / (E - S) * 100));
+  let bars = B.map(b => {
+    const l = pos(b.sh), r = pos(b.eh);
+    return `<i style="left:${l}%;width:${Math.max(1.1, r - l)}%"></i>`;
+  }).join('');
+
+  let out = `<div class="stats">
+    <div class="stat hot"><b>${hhmm(d.total)}</b><span>作業した時間</span></div>
+    <div class="stat"><b>${B.length}</b><span>区切りの数</span></div>
+    <div class="stat"><b>${d.maxpar || '—'}</b><span>最大の並行数</span></div>
+    <div class="stat"><b>${d.snoozes || 0}</b><span>あと5分</span></div>
+  </div>
+  <div class="tl">${bars}</div>
+  <div class="ticks"><span>6時</span><span>11時</span><span>16時</span><span>21時</span><span>2時</span></div>`;
+
+  if (!B.length) {
+    out += `<div class="empty">この日の記録はまだありません。<br>10分以上続けて作業すると残ります。</div>`;
+  }
+  for (const b of B) {
+    const small = b.kind === 'short' || b.mins < 10;
+    out += `<div class="blk${small ? ' small' : ''}"><div class="bh">
+      <span class="time">${b.start} → ${b.end}</span>
+      <span class="len">${hhmm(b.mins)}</span>`;
+    if (b.parallel > 1) out += `<span class="par">${b.parallel}本 並行</span>`;
+    if (b.snoozes > 0) out += `<span class="par">あと5分 ×${b.snoozes}</span>`;
+    out += `<span class="tag${b.kind === 'break_start' ? ' done' : ''}">${esc(b.label)}</span></div>`;
+    if (b.cc.length && !small) {
+      out += '<ul class="did">' + b.cc.map(c =>
+        `<li><em>${c.n}回</em><span>${esc(c.what)}</span></li>`).join('') + '</ul>';
+    }
+    if (b.apps.length && !small) {
+      out += '<div class="apps">' + b.apps.map(a =>
+        `<div class="app"><span>${esc(a.what)}</span>
+         <u><b style="width:${a.pct}%"></b></u><s>${a.pct}%</s></div>`).join('') + '</div>';
+    }
+    out += '</div>';
+  }
+  document.getElementById('body').innerHTML = out;
+}
+
+function start(){
+  keys = Object.keys(DATA);
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('sub').textContent = '書き出し ' + '09/02 12:42';
+  if (!keys.length) {
+    document.getElementById('body').innerHTML =
+      '<div class="empty">まだ記録がありません。</div>';
+    return;
+  }
+  document.getElementById('days').innerHTML = keys.map((k, i) =>
+    `<div class="day${i ? '' : ' on'}" data-k="${k}">${label(k)}</div>`).join('');
+  document.querySelectorAll('.day').forEach(e =>
+    e.onclick = () => render(e.dataset.k));
+  render(keys[0]);
+}
+
+const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+
+async function unlock(){
+  const pw = document.getElementById('pw').value;
+  const ng = document.getElementById('ng');
+  if (!pw) return;
+  ng.textContent = 'ひらいています…';
+  try {
+    const base = await crypto.subtle.importKey('raw',
+      new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
+    const key = await crypto.subtle.deriveKey(
+      { name:'PBKDF2', salt: b64(ENC.s), iterations: 200000, hash:'SHA-256' },
+      base, { name:'AES-GCM', length:256 }, false, ['decrypt']);
+    const plain = await crypto.subtle.decrypt(
+      { name:'AES-GCM', iv: b64(ENC.i) }, key, b64(ENC.c));
+    DATA = JSON.parse(new TextDecoder().decode(plain));
+    try { localStorage.setItem('pomoPw', pw); } catch (e) {}
+    start();
+  } catch (e) {
+    ng.textContent = '合い言葉が違います';
+    document.getElementById('pw').select();
+  }
+}
+
+if (ENC && !(window.crypto && crypto.subtle)) {
+  document.getElementById('body').innerHTML =
+    '<div class="empty">このページは https でしか開けません。<br>' +
+    'ブラウザの仕様で、暗号を解く機能が使えないためです。</div>';
+} else if (ENC) {
+  document.getElementById('gate').style.display = 'block';
+  document.getElementById('go').onclick = unlock;
+  document.getElementById('pw').onkeydown = e => { if (e.key === 'Enter') unlock(); };
+  let saved = null;
+  try { saved = localStorage.getItem('pomoPw'); } catch (e) {}
+  if (saved) { document.getElementById('pw').value = saved; unlock(); }
+  else document.getElementById('pw').focus();
+} else {
+  start();
+}
+</script></body></html>

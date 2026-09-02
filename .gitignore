@@ -1,0 +1,4 @@
+# 万一にも混ざらないように
+*.jsonl
+password*
+log*
